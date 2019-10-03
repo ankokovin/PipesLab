@@ -17,7 +17,10 @@ namespace Pipes
 {
     public partial class frmMain : Form
     {
-        private Dictionary<string, string> Nicknames = new Dictionary<string, string>();
+        private Dictionary<string, string> Nicknames = new Dictionary<string, string>
+        {
+            ["Admin"] = "."
+        };
 
 
         private Int32 PipeHandle;                                                       // дескриптор канала
