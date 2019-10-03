@@ -11,9 +11,9 @@ namespace Pipes
     {
         public static SHA1 sha = new SHA1CryptoServiceProvider();
 
-        public static string ClientPipeName(string nodeName, string nickName, bool local)
+        public static string ClientPipeName(string nodeName, string nickName,string salt, bool local)
         {
-            string pipename = Convert.ToBase64String(sha.ComputeHash(Encoding.Unicode.GetBytes(nodeName + "@" + nickName)));
+            string pipename = Convert.ToBase64String(sha.ComputeHash(Encoding.Unicode.GetBytes(nodeName + nickName + salt)));
             return "\\\\" + (local?".":nodeName) + "\\pipe\\"+ pipename;
         }
 

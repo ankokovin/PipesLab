@@ -17,11 +17,13 @@ namespace Pipes
 {
     public partial class frmMain : Form
     {
+
         private Dictionary<string, string> Nicknames = new Dictionary<string, string>
         {
             ["Admin"] = "."
         };
 
+        private Dictionary<string, string> Salts = new Dictionary<string, string>();
 
         private Int32 PipeHandle;                                                       // дескриптор канала
         private string PipeName = "\\\\" + Dns.GetHostName() + "\\pipe\\ServerPipe";    // имя канала, Dns.GetHostName() - метод, возвращающий имя машины, на которой запущено приложение
@@ -75,12 +77,12 @@ namespace Pipes
                         else
                         {
                             resultMessage = new BObjects.SuccessfulLoginResult();
-
                         }
                         Thread.Sleep(500);
-                        GivePrivateMessage(resultMessage, lir.nodeName, lir.nickName);
+                        GivePrivateMessage(resultMessage, lir.nodeName, lir.nickName, lir.salt);
                         if (resultMessage is BObjects.SuccessfulLoginResult)
                         {
+                            Salts[lir.nickName] = lir.salt;
                             GiveMessage(new BObjects.NewUserMessage { Nickname = lir.nickName });
                             Nicknames.Add(lir.nickName, lir.nodeName);
                         }
@@ -106,8 +108,10 @@ namespace Pipes
                 }
             }
         }
-        private void GivePrivateMessage(BObjects.ServerMessage msg, string nodeName, string nickname)
+        private void GivePrivateMessage(BObjects.ServerMessage msg, string nodeName, string nickname, string salt=null)
         {
+            if (salt == null)
+                salt = Salts[nickname];
             uint BytesWritten = 0;
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings
             {
@@ -116,7 +120,7 @@ namespace Pipes
   
             byte[] buff = Encoding.Unicode.GetBytes(json);    // выполняем преобразование сообщения (вместе с идентификатором машины) в последовательность байт
 
-            string pipename = Helpers.ClientPipeName(nodeName, nickname,false);
+            string pipename = Helpers.ClientPipeName(nodeName, nickname,salt,false);
             Debug.WriteLine("server writes to " + pipename);
             var PipeHandleO = DIS.Import.CreateFile(pipename, DIS.Types.EFileAccess.GenericWrite, DIS.Types.EFileShare.Read, 0, DIS.Types.ECreationDisposition.OpenExisting, 0, 0);
             DIS.Import.WriteFile(PipeHandleO, buff, Convert.ToUInt32(buff.Length), ref BytesWritten, 0);         // выполняем запись последовательности байт в канал
@@ -133,7 +137,8 @@ namespace Pipes
 
             foreach(var pair in Nicknames)
             {
-                GivePrivateMessage(msg, pair.Value, pair.Key);
+                if (pair.Key!="Admin")
+                    GivePrivateMessage(msg, pair.Value, pair.Key);
             }
         }
 

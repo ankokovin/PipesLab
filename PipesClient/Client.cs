@@ -53,7 +53,8 @@ namespace Pipes
             }
             else
             {
-                var req = new BObjects.LogInRequest { nickName = tbMessage.Text, nodeName = Dns.GetHostName() };
+                salt = Guid.NewGuid().ToString();
+                var req = new BObjects.LogInRequest { nickName = tbMessage.Text, nodeName = Dns.GetHostName(),salt=salt };
                 json = JsonConvert.SerializeObject(req,  new JsonSerializerSettings
                 {
                     TypeNameHandling = TypeNameHandling.All
@@ -121,7 +122,7 @@ namespace Pipes
             });
             ShowMessage("Logged out!");
         }
-
+        string salt;
         private void HandlePipe()
         {
             uint realBytesReaded = 0;   // количество реально прочитанных из канала байтов
@@ -134,7 +135,7 @@ namespace Pipes
                     {
                         opened = true;
                         Debug.WriteLine("got nickname:" + nickname);
-                        string pipename = Helpers.ClientPipeName(Dns.GetHostName(), nickname, true);
+                        string pipename = Helpers.ClientPipeName(Dns.GetHostName(), nickname,salt, true);
                         Debug.WriteLine("client pipename:" + pipename);
                         PipeHandle = DIS.Import.CreateNamedPipe(pipename, DIS.Types.PIPE_ACCESS_DUPLEX, DIS.Types.PIPE_TYPE_BYTE | DIS.Types.PIPE_WAIT, DIS.Types.PIPE_UNLIMITED_INSTANCES, 0, 1024, DIS.Types.NMPWAIT_WAIT_FOREVER, (uint)0);
                         

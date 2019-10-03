@@ -11,6 +11,7 @@ namespace Pipes.BObjects
     {
         public string nodeName;
         public string nickName;
+        public string salt;
     }
     [Serializable]
     public class LogInRequest : ClientRequest
