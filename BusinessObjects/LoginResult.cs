@@ -4,17 +4,22 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BusinessObjects
+namespace Pipes.BObjects
 {
+    [Serializable]
     abstract class LoginResult
     {
     }
 
+
+
+    [Serializable]
     class FailedLoginResult : LoginResult
     {
-        string Message;
+        public string Message;
     }
 
+    [Serializable]
     class SuccessfulLoginResult : LoginResult
     {
        
