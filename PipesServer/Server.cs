@@ -9,6 +9,8 @@ using System.Windows.Forms;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Xml.Serialization;
+using System.IO;
 
 namespace Pipes
 {
@@ -54,19 +56,36 @@ namespace Pipes
                     DIS.Import.FlushFileBuffers(PipeHandle);                                // "принудительная" запись данных, расположенные в буфере операционной системы, в файл именованного канала
                     DIS.Import.ReadFile(PipeHandle, buff, 1024, ref realBytesReaded, 0);    // считываем последовательность байтов из канала в буфер buff
                     reseviedMessage = Encoding.Unicode.GetString(buff);                                 // выполняем преобразование байтов в последовательность символов
-                    int sourceidx = Helpers.GetSourceIdx(reseviedMessage);
-                    string source = reseviedMessage.Substring(0, sourceidx);
-                    string resultMessage = "";
-                    string content = Helpers.ClearString(reseviedMessage.Substring(sourceidx));
-                    if (Nicknames.ContainsKey(source))
+                    BObjects.ClientRequest request;
+                    XmlSerializer xmlSerializer = new XmlSerializer(typeof(BObjects.ClientRequest));
+                    using (StringReader sr = new StringReader(Helpers.ClearString(reseviedMessage)))
                     {
-                        string nickname = Nicknames[source];
-                        resultMessage = ">> " + nickname + content;
-                    }else
-                    {
-                        Nicknames.Add(source, content.Substring(3));
-                        resultMessage = string.Format("New user {0} joined this chat", Nicknames[source]);
+                        request = (BObjects.ClientRequest)xmlSerializer.Deserialize(sr);
                     }
+                    BObjects.ServerMessage resultMessage = null;
+                    if (request is BObjects.LogInRequest lir)
+                    {
+                        if (Nicknames.ContainsKey(lir.nickName))
+                            resultMessage = new BObjects.FailedLoginResult { Message = "Такое имя уже занято" };
+                        else
+                        {
+                            resultMessage = new BObjects.SuccessfulLoginResult();
+                            Nicknames.Add(lir.nickName, lir.nodeName);
+                        }
+                        GivePrivateMessage(resultMessage, lir.nodeName, lir.nickName);
+                        if (resultMessage is BObjects.SuccessfulLoginResult)
+                            resultMessage = new BObjects.NewUserMessage { Nickname = lir.nickName };
+                        else
+                            resultMessage = null;
+                    }else if (request is BObjects.LogOutRequest lor)
+                    {
+                        Nicknames.Remove(lor.nickName);
+                        resultMessage = new BObjects.QuitUserMessage { Nickname = lor.nickName };
+                    }else if (request is BObjects.MessageRequest mr)
+                    {
+                        resultMessage = new BObjects.UserMessage { Nickname = mr.nickName, Message = mr.Message };
+                    }
+                    
 
                     GiveMessage(resultMessage);
 
@@ -75,19 +94,36 @@ namespace Pipes
                 }
             }
         }
-
-
-        private void GiveMessage(string msg)
+        private void GivePrivateMessage(BObjects.ServerMessage msg, string nodeName, string nickname)
         {
+            uint BytesWritten = 0;
+            string xml;
+            XmlSerializer xmlSerializer = new XmlSerializer(typeof(BObjects.ServerMessage));
+
+            using (var sw = new StringWriter())
+            {
+                xmlSerializer.Serialize(sw, msg);
+                xml = sw.ToString();
+            }
+            byte[] buff = Encoding.Unicode.GetBytes(xml);    // выполняем преобразование сообщения (вместе с идентификатором машины) в последовательность байт
+
+            // открываем именованный канал, имя которого указано в поле tbPipe
+            var PipeHandleO = DIS.Import.CreateFile(Helpers.ClientPipeName(nodeName, nickname), DIS.Types.EFileAccess.GenericWrite, DIS.Types.EFileShare.Read, 0, DIS.Types.ECreationDisposition.OpenExisting, 0, 0);
+            DIS.Import.WriteFile(PipeHandleO, buff, Convert.ToUInt32(buff.Length), ref BytesWritten, 0);         // выполняем запись последовательности байт в канал
+            DIS.Import.CloseHandle(PipeHandleO);
+        }
+
+        private void GiveMessage(BObjects.ServerMessage msg)
+        {
+            if (msg == null) return;
             rtbMessages.Invoke((MethodInvoker)delegate
             {
-                if (msg != "")
-                    rtbMessages.Text += "\n" + msg;                             // выводим полученное сообщение на форму
+                  rtbMessages.Text += "\n" + Helpers.DisplayMessage(msg);                             // выводим полученное сообщение на форму
             });
 
             foreach(var pair in Nicknames)
             {
-
+                GivePrivateMessage(msg, pair.Value, pair.Key);
             }
         }
 

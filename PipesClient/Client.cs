@@ -129,10 +129,11 @@ namespace Pipes
 
         private void HandlePipe()
         {
-            PipeHandle = DIS.Import.CreateNamedPipe(Helpers.ClientPipeName(Dns.GetHostName(), nickname), DIS.Types.PIPE_ACCESS_DUPLEX, DIS.Types.PIPE_TYPE_BYTE | DIS.Types.PIPE_WAIT, DIS.Types.PIPE_UNLIMITED_INSTANCES, 0, 1024, DIS.Types.NMPWAIT_WAIT_FOREVER, (uint)0);
             uint realBytesReaded = 0;   // количество реально прочитанных из канала байтов
             while (!stop)
             {
+                PipeHandle = DIS.Import.CreateNamedPipe(Helpers.ClientPipeName(Dns.GetHostName(), nickname), DIS.Types.PIPE_ACCESS_DUPLEX, DIS.Types.PIPE_TYPE_BYTE | DIS.Types.PIPE_WAIT, DIS.Types.PIPE_UNLIMITED_INSTANCES, 0, 1024, DIS.Types.NMPWAIT_WAIT_FOREVER, (uint)0);
+
                 if (DIS.Import.ConnectNamedPipe(PipeHandle, 0))
                 {
                     byte[] buff = new byte[1024];                                           // буфер прочитанных из канала байтов
@@ -173,6 +174,8 @@ namespace Pipes
                     }
                     
                 }
+                DIS.Import.DisconnectNamedPipe(PipeHandle);                             // отключаемся от канала клиента 
+                Thread.Sleep(500);
             }
            
         }
@@ -209,6 +212,11 @@ namespace Pipes
         {
             stop = true;
             SendDisconnect();
+            if (t != null)
+                t.Abort();          // завершаем поток
+
+            if (PipeHandle != -1)
+                DIS.Import.CloseHandle(PipeHandle);     // закрываем дескриптор канала
         }
     }
 }
