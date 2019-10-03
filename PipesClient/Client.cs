@@ -181,6 +181,34 @@ namespace Pipes
         {
             stop = true;
             onLoggedOut();
+            SendDisconnect();
+        }
+
+        private void SendDisconnect()
+        {
+            if (!LoggedIn)
+                return;
+            uint BytesWritten=0;
+            string xml;
+            XmlSerializer xmlSerializer = new XmlSerializer(typeof(BObjects.LogOutRequest));
+            var req = new BObjects.LogOutRequest { nickName = nickname, nodeName = Dns.GetHostName() };
+            using (var sw = new StringWriter())
+            {
+                xmlSerializer.Serialize(sw, req);
+                xml = sw.ToString();
+            }
+            byte[] buff = Encoding.Unicode.GetBytes(xml);    // выполняем преобразование сообщения (вместе с идентификатором машины) в последовательность байт
+
+            // открываем именованный канал, имя которого указано в поле tbPipe
+            var PipeHandleO = DIS.Import.CreateFile(tbPipe.Text, DIS.Types.EFileAccess.GenericWrite, DIS.Types.EFileShare.Read, 0, DIS.Types.ECreationDisposition.OpenExisting, 0, 0);
+            DIS.Import.WriteFile(PipeHandleO, buff, Convert.ToUInt32(buff.Length), ref BytesWritten, 0);         // выполняем запись последовательности байт в канал
+            DIS.Import.CloseHandle(PipeHandleO);
+        }
+
+        private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            stop = true;
+            SendDisconnect();
         }
     }
 }

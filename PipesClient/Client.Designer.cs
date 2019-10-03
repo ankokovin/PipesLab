@@ -115,6 +115,7 @@
             this.Name = "frmMain";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Клиент";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmMain_FormClosing);
             this.ResumeLayout(false);
             this.PerformLayout();
 
