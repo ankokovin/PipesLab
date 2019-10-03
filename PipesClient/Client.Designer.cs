@@ -90,6 +90,7 @@
             this.disconnectButton.TabIndex = 3;
             this.disconnectButton.Text = "Отсоединиться";
             this.disconnectButton.UseVisualStyleBackColor = true;
+            this.disconnectButton.Click += new System.EventHandler(this.disconnectButton_Click);
             // 
             // messageTextBox
             // 

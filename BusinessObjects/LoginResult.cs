@@ -7,20 +7,18 @@ using System.Threading.Tasks;
 namespace Pipes.BObjects
 {
     [Serializable]
-    abstract class LoginResult
+    public abstract class LoginResult : ServerMessage
     {
     }
 
-
-
     [Serializable]
-    class FailedLoginResult : LoginResult
+    public class FailedLoginResult : LoginResult
     {
         public string Message;
     }
 
     [Serializable]
-    class SuccessfulLoginResult : LoginResult
+    public class SuccessfulLoginResult : LoginResult
     {
        
     }

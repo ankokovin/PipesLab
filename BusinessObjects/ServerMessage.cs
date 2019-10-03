@@ -7,30 +7,30 @@ using System.Threading.Tasks;
 namespace Pipes.BObjects
 {
     [Serializable]
-    abstract class ServerMessage
+    public abstract class ServerMessage
     {
     }
     [Serializable]
-    class NewUserMessage : ServerMessage
-    {
-
-        public string Nickname;
-    }
-    [Serializable]
-    class QuitUserMessage : ServerMessage
+    public class NewUserMessage : ServerMessage
     {
 
         public string Nickname;
     }
     [Serializable]
-    class UserMessage : ServerMessage
+    public class QuitUserMessage : ServerMessage
+    {
+
+        public string Nickname;
+    }
+    [Serializable]
+    public class UserMessage : ServerMessage
     {
 
         public string Nickname;
         public string Message;
     }
     [Serializable]
-    class ShutDownMessage : ServerMessage
+    public class ShutDownMessage : ServerMessage
     {
 
     }

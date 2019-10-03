@@ -21,7 +21,28 @@ namespace Pipes
 
         public static string ClientPipeName(string nodeName, string nickName)
         {
-            return nickName + "@" + nodeName;
+            return "\\\\" + nodeName + "\\pipe\\mychat@" + nodeName;
+        }
+
+        public static string DisplayMessage(BObjects.ServerMessage msg)
+        {
+            if (msg is BObjects.UserMessage um)
+            {
+                return um.Nickname + " >> " + um.Message;
+            }
+            if (msg is BObjects.NewUserMessage nu)
+            {
+                return "Пользователь " + nu.Nickname + " вошёл в чат";
+            }
+            if (msg is BObjects.QuitUserMessage qu)
+            {
+                return "Пользователь " + qu.Nickname + " вышел из чата";
+            }
+            if (msg is BObjects.ShutDownMessage)
+            {
+                return "Сервер закрывается";
+            }
+            return string.Empty;
         }
     }
 }
