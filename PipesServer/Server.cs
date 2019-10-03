@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -9,8 +10,8 @@ using System.Windows.Forms;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Xml.Serialization;
 using System.IO;
+using Newtonsoft.Json;
 
 namespace Pipes
 {
@@ -57,11 +58,12 @@ namespace Pipes
                     DIS.Import.ReadFile(PipeHandle, buff, 1024, ref realBytesReaded, 0);    // считываем последовательность байтов из канала в буфер buff
                     reseviedMessage = Encoding.Unicode.GetString(buff);                                 // выполняем преобразование байтов в последовательность символов
                     BObjects.ClientRequest request;
-                    XmlSerializer xmlSerializer = new XmlSerializer(typeof(BObjects.ClientRequest));
-                    using (StringReader sr = new StringReader(Helpers.ClearString(reseviedMessage)))
+
+                    request = JsonConvert.DeserializeObject< BObjects.ClientRequest>(reseviedMessage, new JsonSerializerSettings
                     {
-                        request = (BObjects.ClientRequest)xmlSerializer.Deserialize(sr);
-                    }
+                        TypeNameHandling = TypeNameHandling.All
+                    });
+                    
                     BObjects.ServerMessage resultMessage = null;
                     if (request is BObjects.LogInRequest lir)
                     {
@@ -70,24 +72,31 @@ namespace Pipes
                         else
                         {
                             resultMessage = new BObjects.SuccessfulLoginResult();
-                            Nicknames.Add(lir.nickName, lir.nodeName);
+
                         }
+                        Thread.Sleep(500);
                         GivePrivateMessage(resultMessage, lir.nodeName, lir.nickName);
                         if (resultMessage is BObjects.SuccessfulLoginResult)
-                            resultMessage = new BObjects.NewUserMessage { Nickname = lir.nickName };
-                        else
-                            resultMessage = null;
-                    }else if (request is BObjects.LogOutRequest lor)
+                        {
+                            GiveMessage(new BObjects.NewUserMessage { Nickname = lir.nickName });
+                            Nicknames.Add(lir.nickName, lir.nodeName);
+                        }
+
+                    }
+                    else
                     {
-                        Nicknames.Remove(lor.nickName);
-                        resultMessage = new BObjects.QuitUserMessage { Nickname = lor.nickName };
-                    }else if (request is BObjects.MessageRequest mr)
-                    {
-                        resultMessage = new BObjects.UserMessage { Nickname = mr.nickName, Message = mr.Message };
+                        if (request is BObjects.LogOutRequest lor)
+                        {
+                            Nicknames.Remove(lor.nickName);
+                            resultMessage = new BObjects.QuitUserMessage { Nickname = lor.nickName };
+                        }
+                        else if (request is BObjects.MessageRequest mr)
+                        {
+                            resultMessage = new BObjects.UserMessage { Nickname = mr.nickName, Message = mr.Message };
+                        }
+                        GiveMessage(resultMessage);
                     }
                     
-
-                    GiveMessage(resultMessage);
 
                     DIS.Import.DisconnectNamedPipe(PipeHandle);                             // отключаемся от канала клиента 
                     Thread.Sleep(500);                                                      // приостанавливаем работу потока перед тем, как приcтупить к обслуживанию очередного клиента
@@ -97,18 +106,16 @@ namespace Pipes
         private void GivePrivateMessage(BObjects.ServerMessage msg, string nodeName, string nickname)
         {
             uint BytesWritten = 0;
-            string xml;
-            XmlSerializer xmlSerializer = new XmlSerializer(typeof(BObjects.ServerMessage));
-
-            using (var sw = new StringWriter())
+            string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings
             {
-                xmlSerializer.Serialize(sw, msg);
-                xml = sw.ToString();
-            }
-            byte[] buff = Encoding.Unicode.GetBytes(xml);    // выполняем преобразование сообщения (вместе с идентификатором машины) в последовательность байт
+                TypeNameHandling = TypeNameHandling.All
+            });
+  
+            byte[] buff = Encoding.Unicode.GetBytes(json);    // выполняем преобразование сообщения (вместе с идентификатором машины) в последовательность байт
 
-            // открываем именованный канал, имя которого указано в поле tbPipe
-            var PipeHandleO = DIS.Import.CreateFile(Helpers.ClientPipeName(nodeName, nickname), DIS.Types.EFileAccess.GenericWrite, DIS.Types.EFileShare.Read, 0, DIS.Types.ECreationDisposition.OpenExisting, 0, 0);
+            string pipename = Helpers.ClientPipeName(nodeName, nickname,false);
+            Debug.WriteLine("server writes to " + pipename);
+            var PipeHandleO = DIS.Import.CreateFile(pipename, DIS.Types.EFileAccess.GenericWrite, DIS.Types.EFileShare.Read, 0, DIS.Types.ECreationDisposition.OpenExisting, 0, 0);
             DIS.Import.WriteFile(PipeHandleO, buff, Convert.ToUInt32(buff.Length), ref BytesWritten, 0);         // выполняем запись последовательности байт в канал
             DIS.Import.CloseHandle(PipeHandleO);
         }

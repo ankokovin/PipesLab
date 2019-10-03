@@ -9,11 +9,12 @@ namespace Pipes.BObjects
     [Serializable]
     public abstract class ServerMessage
     {
+
     }
     [Serializable]
     public class NewUserMessage : ServerMessage
     {
-
+        public string MessageType = "New";
         public string Nickname;
     }
     [Serializable]

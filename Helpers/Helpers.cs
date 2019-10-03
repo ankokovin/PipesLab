@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -8,20 +9,12 @@ namespace Pipes
 {
     public static class Helpers
     {
-        public  static int GetSourceIdx(string Message)
-        {
-            return Message.IndexOf(">>") - 1;
-        }
+        public static SHA1 sha = new SHA1CryptoServiceProvider();
 
-
-        public  static string ClearString(string input)
+        public static string ClientPipeName(string nodeName, string nickName, bool local)
         {
-            return input.Substring(0, input.IndexOf('\0'));
-        }
-
-        public static string ClientPipeName(string nodeName, string nickName)
-        {
-            return "\\\\" + nodeName + "\\pipe\\mychat@" + nodeName;
+            string pipename = Convert.ToBase64String(sha.ComputeHash(Encoding.Unicode.GetBytes(nodeName + "@" + nickName)));
+            return "\\\\" + (local?".":nodeName) + "\\pipe\\"+ pipename;
         }
 
         public static string DisplayMessage(BObjects.ServerMessage msg)
