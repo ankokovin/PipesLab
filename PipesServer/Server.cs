@@ -43,6 +43,13 @@ namespace Pipes
             return Message.IndexOf(">>")-1;
         }
 
+
+        private string ClearString(string input)
+        {
+            return input.Substring(0, input.IndexOf('\0'));
+        }
+
+
         private void ReceiveMessage()
         {
             string reseviedMessage = "";            // прочитанное сообщение
@@ -60,14 +67,15 @@ namespace Pipes
                     int sourceidx = GetSourceIdx(reseviedMessage);
                     string source = reseviedMessage.Substring(0, sourceidx);
                     string resultMessage = "";
+                    string content = ClearString(reseviedMessage.Substring(sourceidx));
                     if (Nicknames.ContainsKey(source))
                     {
-                        string content = reseviedMessage.Substring(sourceidx);
                         string nickname = Nicknames[source];
                         resultMessage = ">> " + nickname + content;
                     }else
                     {
-                        
+                        Nicknames.Add(source, content.Substring(3));
+                        resultMessage = string.Format("New user {0} joined this chat", Nicknames[source]);
                     }
                     rtbMessages.Invoke((MethodInvoker)delegate
                     {
