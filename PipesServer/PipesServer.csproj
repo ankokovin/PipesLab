@@ -81,6 +81,16 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BusinessObjects\BusinessObjects.csproj">
+      <Project>{5c9650b0-625a-4bed-bc75-f8a971744a72}</Project>
+      <Name>BusinessObjects</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Helpers\Helpers.csproj">
+      <Project>{10363355-211e-4da6-9816-77b49bd3301f}</Project>
+      <Name>Helpers</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

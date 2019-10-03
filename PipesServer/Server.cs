@@ -38,17 +38,7 @@ namespace Pipes
             t.Start();
         }
 
-        private  int GetSourceIdx(string Message)
-        {
-            return Message.IndexOf(">>")-1;
-        }
-
-
-        private string ClearString(string input)
-        {
-            return input.Substring(0, input.IndexOf('\0'));
-        }
-
+        
 
         private void ReceiveMessage()
         {
@@ -64,10 +54,10 @@ namespace Pipes
                     DIS.Import.FlushFileBuffers(PipeHandle);                                // "принудительная" запись данных, расположенные в буфере операционной системы, в файл именованного канала
                     DIS.Import.ReadFile(PipeHandle, buff, 1024, ref realBytesReaded, 0);    // считываем последовательность байтов из канала в буфер buff
                     reseviedMessage = Encoding.Unicode.GetString(buff);                                 // выполняем преобразование байтов в последовательность символов
-                    int sourceidx = GetSourceIdx(reseviedMessage);
+                    int sourceidx = Helpers.GetSourceIdx(reseviedMessage);
                     string source = reseviedMessage.Substring(0, sourceidx);
                     string resultMessage = "";
-                    string content = ClearString(reseviedMessage.Substring(sourceidx));
+                    string content = Helpers.ClearString(reseviedMessage.Substring(sourceidx));
                     if (Nicknames.ContainsKey(source))
                     {
                         string nickname = Nicknames[source];
@@ -77,15 +67,27 @@ namespace Pipes
                         Nicknames.Add(source, content.Substring(3));
                         resultMessage = string.Format("New user {0} joined this chat", Nicknames[source]);
                     }
-                    rtbMessages.Invoke((MethodInvoker)delegate
-                    {
-                        if (resultMessage != "")
-                            rtbMessages.Text += "\n" + resultMessage;                             // выводим полученное сообщение на форму
-                    });
+
+                    GiveMessage(resultMessage);
 
                     DIS.Import.DisconnectNamedPipe(PipeHandle);                             // отключаемся от канала клиента 
                     Thread.Sleep(500);                                                      // приостанавливаем работу потока перед тем, как приcтупить к обслуживанию очередного клиента
                 }
+            }
+        }
+
+
+        private void GiveMessage(string msg)
+        {
+            rtbMessages.Invoke((MethodInvoker)delegate
+            {
+                if (msg != "")
+                    rtbMessages.Text += "\n" + msg;                             // выводим полученное сообщение на форму
+            });
+
+            foreach(var pair in Nicknames)
+            {
+
             }
         }
 

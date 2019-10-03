@@ -47,12 +47,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ChatScreen.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="ChatScreen.Designer.cs">
-      <DependentUpon>ChatScreen.cs</DependentUpon>
-    </Compile>
     <Compile Include="LoginScreen.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -63,9 +57,6 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Types.cs" />
-    <EmbeddedResource Include="ChatScreen.resx">
-      <DependentUpon>ChatScreen.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="LoginScreen.resx">
       <DependentUpon>LoginScreen.cs</DependentUpon>
     </EmbeddedResource>
@@ -89,6 +80,16 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BusinessObjects\BusinessObjects.csproj">
+      <Project>{5c9650b0-625a-4bed-bc75-f8a971744a72}</Project>
+      <Name>BusinessObjects</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Helpers\Helpers.csproj">
+      <Project>{10363355-211e-4da6-9816-77b49bd3301f}</Project>
+      <Name>Helpers</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

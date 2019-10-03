@@ -34,6 +34,9 @@ namespace Pipes
             DIS.Import.CloseHandle(PipeHandle);                                                                 // закрываем дескриптор канала
         }
 
-        
+        private void lblMessage_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
