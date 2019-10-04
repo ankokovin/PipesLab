@@ -19,21 +19,28 @@ namespace Pipes
 
         public static string DisplayMessage(BObjects.ServerMessage msg)
         {
-            if (msg is BObjects.UserMessage um)
+            if (msg is BObjects.UserMessage)
             {
+                var um = msg as BObjects.UserMessage;
                 return um.Nickname + " >> " + um.Message;
             }
-            if (msg is BObjects.NewUserMessage nu)
+            if (msg is BObjects.NewUserMessage)
             {
+                var nu = msg as BObjects.NewUserMessage;
                 return "Пользователь " + nu.Nickname + " вошёл в чат";
             }
-            if (msg is BObjects.QuitUserMessage qu)
+            if (msg is BObjects.QuitUserMessage)
             {
+                var qu = msg as BObjects.QuitUserMessage;
                 return "Пользователь " + qu.Nickname + " вышел из чата";
             }
             if (msg is BObjects.ShutDownMessage)
             {
                 return "Сервер закрывается";
+            }
+            if (msg is BObjects.LogoutAcceptMessage)
+            {
+                return "Отсоединение";
             }
             return string.Empty;
         }

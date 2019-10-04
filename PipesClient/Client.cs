@@ -21,13 +21,15 @@ namespace Pipes
         private string nickname = string.Empty;
         private Int32 PipeHandle;   // дескриптор канала
         private Thread t;
+        private string name;
         // конструктор формы
         public frmMain()
         {
             InitializeComponent();
             t = new Thread(HandlePipe);
             t.Start();
-            this.Text += "     " + Dns.GetHostName();   // выводим имя текущей машины в заголовок формы
+            name = this.Text + "     " + Dns.GetHostName();
+            this.Text = name;   // выводим имя текущей машины в заголовок формы
         }
 
         private void btnSend_Click(object sender, EventArgs e)
@@ -54,7 +56,8 @@ namespace Pipes
             else
             {
                 salt = Guid.NewGuid().ToString();
-                var req = new BObjects.LogInRequest { nickName = tbMessage.Text, nodeName = Dns.GetHostName(),salt=salt };
+                nickname = tbMessage.Text;
+                var req = new BObjects.LogInRequest { nickName = nickname, nodeName = Dns.GetHostName(),salt=salt };
                 json = JsonConvert.SerializeObject(req,  new JsonSerializerSettings
                 {
                     TypeNameHandling = TypeNameHandling.All
@@ -91,6 +94,9 @@ namespace Pipes
 
         private void onLoggedIn()
         {
+            this.Invoke((MethodInvoker)delegate{
+                this.Text = name + " " + nickname;
+            });
             tbPipe.Invoke((MethodInvoker)delegate
             {
                 tbPipe.Enabled = false;
@@ -108,6 +114,9 @@ namespace Pipes
 
         private void onLoggedOut()
         {
+            this.Invoke((MethodInvoker)delegate {
+                this.Text = name;
+            });
             tbPipe.Invoke((MethodInvoker)delegate
             {
                 tbPipe.Enabled = true;
@@ -123,10 +132,12 @@ namespace Pipes
             ShowMessage("Logged out!");
         }
         string salt;
+        bool opened;
+        bool connected;
         private void HandlePipe()
         {
             uint realBytesReaded = 0;   // количество реально прочитанных из канала байтов
-            bool opened = false;
+            opened = false;
             while (!stop)
             {
                 if (nickname.Length > 0)
@@ -138,16 +149,20 @@ namespace Pipes
                         string pipename = Helpers.ClientPipeName(Dns.GetHostName(), nickname,salt, true);
                         Debug.WriteLine("client pipename:" + pipename);
                         PipeHandle = DIS.Import.CreateNamedPipe(pipename, DIS.Types.PIPE_ACCESS_DUPLEX, DIS.Types.PIPE_TYPE_BYTE | DIS.Types.PIPE_WAIT, DIS.Types.PIPE_UNLIMITED_INSTANCES, 0, 1024, DIS.Types.NMPWAIT_WAIT_FOREVER, (uint)0);
-                        
+                        if (PipeHandle == -1)
+                        {
+                            throw new Exception("Couldn't create pipe");
+                        }
                     }
 
-                    if (DIS.Import.ConnectNamedPipe(PipeHandle, 0))
+                    if ( DIS.Import.ConnectNamedPipe(PipeHandle, 0))
                     {
+                        connected = true;
                         byte[] buff = new byte[1024];                                           // буфер прочитанных из канала байтов
                         DIS.Import.FlushFileBuffers(PipeHandle);                                // "принудительная" запись данных, расположенные в буфере операционной системы, в файл именованного канала
                         DIS.Import.ReadFile(PipeHandle, buff, 1024, ref realBytesReaded, 0);    // считываем последовательность байтов из канала в буфер buff
                         string reseviedMessage = Encoding.Unicode.GetString(buff);
-                       
+                        Debug.WriteLine("Client got " + reseviedMessage);
                         var msg = JsonConvert.DeserializeObject< BObjects.ServerMessage>(reseviedMessage, new JsonSerializerSettings
                         {
                             TypeNameHandling = TypeNameHandling.All
@@ -164,6 +179,7 @@ namespace Pipes
                                 }
                                 else
                                 {
+                                    nickname = string.Empty;
                                     var failres = (BObjects.FailedLoginResult)msg;
                                     ShowMessage(failres.Message);
                                 }
@@ -175,16 +191,18 @@ namespace Pipes
                             {
                                 ShowMessage(Helpers.DisplayMessage(msg));
                             }
-                            else if (msg is BObjects.ShutDownMessage)
+                            else if (msg is BObjects.ShutDownMessage || msg is BObjects.LogoutAcceptMessage)
                             {
                                 ShowMessage(Helpers.DisplayMessage(msg));
                                 onLoggedOut();
-                                stop = true;
+                                LoggedIn = false;
+                                nickname = string.Empty;
                             }
                         }
 
                     }
                     DIS.Import.DisconnectNamedPipe(PipeHandle);                             // отключаемся от канала клиента 
+                    connected = false;
                 }
                 else
                 {
@@ -197,8 +215,7 @@ namespace Pipes
 
         private void disconnectButton_Click(object sender, EventArgs e)
         {
-            stop = true;
-            onLoggedOut();
+            opened = false;
             SendDisconnect();
         }
 

@@ -63,22 +63,23 @@ namespace Pipes
                     DIS.Import.ReadFile(PipeHandle, buff, 1024, ref realBytesReaded, 0);    // считываем последовательность байтов из канала в буфер buff
                     reseviedMessage = Encoding.Unicode.GetString(buff);                                 // выполняем преобразование байтов в последовательность символов
                     BObjects.ClientRequest request;
-
+                    Debug.WriteLine("Server got " + reseviedMessage);
                     request = JsonConvert.DeserializeObject< BObjects.ClientRequest>(reseviedMessage, new JsonSerializerSettings
                     {
                         TypeNameHandling = TypeNameHandling.All
                     });
                     
                     BObjects.ServerMessage resultMessage = null;
-                    if (request is BObjects.LogInRequest lir)
+                    if (request is BObjects.LogInRequest)
                     {
+                        var lir = request as BObjects.LogInRequest;
                         if (Nicknames.ContainsKey(lir.nickName))
                             resultMessage = new BObjects.FailedLoginResult { Message = "Такое имя уже занято" };
                         else
                         {
                             resultMessage = new BObjects.SuccessfulLoginResult();
                         }
-                        Thread.Sleep(500);
+                        Thread.Sleep(1000);
                         GivePrivateMessage(resultMessage, lir.nodeName, lir.nickName, lir.salt);
                         if (resultMessage is BObjects.SuccessfulLoginResult)
                         {
@@ -90,13 +91,17 @@ namespace Pipes
                     }
                     else
                     {
-                        if (request is BObjects.LogOutRequest lor)
+                        if (request is BObjects.LogOutRequest)
                         {
+                            var lor = request as BObjects.LogOutRequest;
+                            GivePrivateMessage(new BObjects.LogoutAcceptMessage(), lor.nodeName, lor.nickName, Salts[lor.nickName]);
                             Nicknames.Remove(lor.nickName);
+                            Salts.Remove(lor.nickName);
                             resultMessage = new BObjects.QuitUserMessage { Nickname = lor.nickName };
                         }
-                        else if (request is BObjects.MessageRequest mr)
+                        else if (request is BObjects.MessageRequest)
                         {
+                            var mr = request as BObjects.MessageRequest;
                             resultMessage = new BObjects.UserMessage { Nickname = mr.nickName, Message = mr.Message };
                         }
                         GiveMessage(resultMessage);

@@ -35,4 +35,9 @@ namespace Pipes.BObjects
     {
 
     }
+    [Serializable]
+    public class LogoutAcceptMessage : ServerMessage
+    {
+
+    }
 }
